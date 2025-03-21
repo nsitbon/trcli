@@ -1,0 +1,37 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: "0 0 * * *"
+
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y curl jq
+      - name: Docker login
+        run: docker login -u "${{ vars.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
+      - name: Git config
+        run: git config user.name "GitHub Actions Bot" &&
+          git config user.email "<>"
+      - name: Build the Docker image
+        run: export VERSION=`curl -s https://api.github.com/repos/gurock/trcli/releases | jq -r '.[0].tag_name'` &&
+          curl -s https://api.github.com/repos/nsitbon/trcli/tags | grep "\"name\":\ \"$VERSION\"" || (
+          docker build . --file Dockerfile --tag nsitbon/trcli:$VERSION &&
+          docker image tag nsitbon/trcli:$VERSION nsitbon/trcli:latest &&
+          docker image push nsitbon/trcli:latest &&
+          docker image push nsitbon/trcli:$VERSION &&
+          git tag $VERSION &&
+          git push origin main --tags
+          )
+
