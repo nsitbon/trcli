@@ -26,12 +26,16 @@ jobs:
           git config user.email "<>"
       - name: Build the Docker image
         run: export VERSION=`curl -s https://api.github.com/repos/gurock/trcli/releases | jq -r '.[0].tag_name'` &&
-          curl -s https://api.github.com/repos/nsitbon/trcli/tags | grep "\"name\":\ \"$VERSION\"" || (
-          docker build . --file Dockerfile --tag nsitbon/trcli:$VERSION &&
-          docker image tag nsitbon/trcli:$VERSION nsitbon/trcli:latest &&
+          export CLEAN_VERSION="${VERSION#?}" &&
+          curl -s https://api.github.com/repos/nsitbon/trcli/tags | grep "\"name\":\ \"$CLEAN_VERSION\"" || (
+          docker build --build-arg VERSION=$CLEAN_VERSION --file Dockerfile --tag nsitbon/trcli:$CLEAN_VERSION . &&
+          docker build --build-arg VERSION=$CLEAN_VERSION --file Dockerfile-pipe --tag nsitbon/trcli-pipe:$CLEAN_VERSION . &&
+          docker image tag nsitbon/trcli:$CLEAN_VERSION nsitbon/trcli:latest &&
+          docker image tag nsitbon/trcli-pipe:$CLEAN_VERSION nsitbon/trcli-pipe:latest &&
           docker image push nsitbon/trcli:latest &&
-          docker image push nsitbon/trcli:$VERSION &&
-          git tag $VERSION &&
+          docker image push nsitbon/trcli-pipe:latest &&
+          docker image push nsitbon/trcli:$CLEAN_VERSION &&
+          docker image push nsitbon/trcli-pipe:$CLEAN_VERSION &&
+          git tag $CLEAN_VERSION &&
           git push origin main --tags
           )
-

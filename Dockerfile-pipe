@@ -1,0 +1,4 @@
+ARG VERSION
+FROM nsitbon/trcli:$VERSION
+COPY entrypoint.sh /
+ENTRYPOINT ["/entrypoint.sh"]
