@@ -37,6 +37,6 @@ jobs:
           docker image push ghcr.io/${{ github.repository }}-pipe:latest &&
           docker image push ghcr.io/${{ github.repository }}:$VERSION &&
           docker image push ghcr.io/${{ github.repository }}-pipe:$VERSION &&
-          git tag $CLEAN_VERSION &&
+          git tag $VERSION &&
           git push origin main --tags
           )
