@@ -13,29 +13,30 @@ jobs:
 
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y curl jq
-      - name: Docker login
-        run: docker login -u "${{ vars.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
-      - name: Git config
-        run: git config user.name "GitHub Actions Bot" &&
-          git config user.email "<>"
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build the Docker image
-        run: export VERSION=`curl -s https://api.github.com/repos/gurock/trcli/releases | jq -r '.[0].tag_name'` &&
-          export CLEAN_VERSION="${VERSION#?}" &&
-          curl -s https://api.github.com/repos/nsitbon/trcli/tags | grep "\"name\":\ \"$CLEAN_VERSION\"" || (
-          docker build --build-arg VERSION=$CLEAN_VERSION --file Dockerfile --tag nsitbon/trcli:$CLEAN_VERSION . &&
-          docker build --build-arg VERSION=$CLEAN_VERSION --file Dockerfile-pipe --tag nsitbon/trcli-pipe:$CLEAN_VERSION . &&
-          docker image tag nsitbon/trcli:$CLEAN_VERSION nsitbon/trcli:latest &&
-          docker image tag nsitbon/trcli-pipe:$CLEAN_VERSION nsitbon/trcli-pipe:latest &&
-          docker image push nsitbon/trcli:latest &&
-          docker image push nsitbon/trcli-pipe:latest &&
-          docker image push nsitbon/trcli:$CLEAN_VERSION &&
-          docker image push nsitbon/trcli-pipe:$CLEAN_VERSION &&
+        run: export PREFIXED_VERSION=`curl -s https://api.github.com/repos/gurock/trcli/releases | jq -r '.[0].tag_name'` &&
+          export VERSION="${PREFIXED_VERSION#?}" &&
+          curl -s https://api.github.com/repos/${{ github.repository }}/tags | grep "\"name\":\ \"$VERSION\"" || (
+          docker build --build-arg VERSION=$VERSION --file Dockerfile --tag ghcr.io/${{ github.repository }}:$VERSION . &&
+          docker build --build-arg VERSION=$VERSION --file Dockerfile-pipe --tag ghcr.io/${{ github.repository }}-pipe:$VERSION . &&
+          docker image tag ghcr.io/${{ github.repository }}:$VERSION ghcr.io/${{ github.repository }}:latest &&
+          docker image tag ghcr.io/${{ github.repository }}-pipe:$VERSION ghcr.io/${{ github.repository }}-pipe:latest &&
+          docker image push ghcr.io/${{ github.repository }}:latest &&
+          docker image push ghcr.io/${{ github.repository }}-pipe:latest &&
+          docker image push ghcr.io/${{ github.repository }}:$VERSION &&
+          docker image push ghcr.io/${{ github.repository }}-pipe:$VERSION &&
           git tag $CLEAN_VERSION &&
           git push origin main --tags
           )

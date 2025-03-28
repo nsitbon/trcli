@@ -1,4 +1,4 @@
 ARG VERSION
-FROM nsitbon/trcli:$VERSION
+FROM ghcr.io/nsitbon/trcli:$VERSION
 COPY entrypoint.sh /
 ENTRYPOINT ["/entrypoint.sh"]
